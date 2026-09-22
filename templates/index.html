@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phishing & Fake Job Offer Inspector</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col items-center justify-center p-4 selection:bg-blue-600 selection:text-white">
+
+    <div class="max-w-2xl w-full bg-slate-900/90 backdrop-blur-md rounded-2xl shadow-2xl p-6 sm:p-8 border border-slate-800 my-8">
+        
+        <!-- Header & Live Connection Status Badge -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-5 border-b border-slate-800">
+            <div>
+                <div class="flex items-center space-x-2.5">
+                    <span class="text-2xl">🛡️</span>
+                    <h1 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Phishing & Fake Offer Scanner</h1>
+                </div>
+                <p class="text-xs text-slate-400 mt-1">Multi-layered scam detection powered by Gemini AI, Scikit-learn ML & WHOIS</p>
+            </div>
+            
+            <div id="statusBadge" class="self-start sm:self-center flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-medium bg-slate-800/80 border border-slate-700/80 shadow-inner transition-colors duration-300">
+                <span id="statusDot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                <span id="statusText" class="text-slate-300">Connecting Backend...</span>
+            </div>
+        </div>
+
+        <!-- Sample Test Prompts -->
+        <div class="mb-5 flex flex-wrap items-center gap-2 text-xs">
+            <span class="text-slate-400 font-medium">Quick Test:</span>
+            <button type="button" id="loadSampleScam" class="px-2.5 py-1 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 transition">
+                🚨 Load Scam Sample
+            </button>
+            <button type="button" id="loadSampleLegit" class="px-2.5 py-1 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 transition">
+                ✅ Load Legitimate Sample
+            </button>
+            <button type="button" id="clearFormBtn" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition ml-auto">
+                Clear
+            </button>
+        </div>
+
+        <form id="scanForm" class="space-y-5">
+            <!-- PDF Upload Input (with full drag & drop) -->
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">Upload Offer Letter PDF</label>
+                <div id="dropZone"
+                    class="border-2 border-dashed border-slate-700 hover:border-blue-500 bg-slate-950/60 rounded-xl p-5 text-center cursor-pointer transition-all duration-200 group">
+                    <input type="file" id="pdfFile" name="file" accept=".pdf" class="hidden">
+                    <div class="flex flex-col items-center justify-center gap-1 text-slate-400 text-xs">
+                        <svg class="w-7 h-7 text-slate-500 group-hover:text-blue-400 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <p><span class="text-blue-400 font-semibold group-hover:underline">Click to browse</span> or drag & drop PDF here</p>
+                        <p class="text-[11px] text-slate-500">Supports standard offer letters and recruitment contracts</p>
+                    </div>
+                    <div id="fileName" class="text-xs text-emerald-400 mt-2 font-mono break-all font-medium"></div>
+                </div>
+            </div>
+
+            <!-- Offer Text Area -->
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">Offer Letter / Email Text</label>
+                <textarea id="offerText" name="text" rows="4"
+                    class="w-full bg-slate-950/80 border border-slate-700/80 rounded-xl p-3.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition"
+                    placeholder="Paste suspicious job description, compensation breakdown, payment demands, or interview emails here..."></textarea>
+            </div>
+
+            <!-- Company Website URL Input -->
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">Company Website / Domain URL</label>
+                <input type="text" id="offerUrl" name="url"
+                    class="w-full bg-slate-950/80 border border-slate-700/80 rounded-xl p-3 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition"
+                    placeholder="e.g., https://suspicious-hiring-corp.com or just domain.com">
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" id="submitBtn"
+                class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold py-3.5 rounded-xl transition duration-200 shadow-lg shadow-blue-600/25 flex items-center justify-center space-x-2">
+                <span>Analyze Potential Threat</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+            </button>
+        </form>
+
+        <!-- Loading State -->
+        <div id="loading" class="hidden text-center py-8">
+            <div class="inline-block animate-spin rounded-full h-9 w-9 border-t-2 border-b-2 border-blue-500"></div>
+            <p class="text-sm font-medium text-slate-200 mt-3">Inspecting threat factors...</p>
+            <p class="text-xs text-slate-400 mt-1">Cross-referencing WHOIS domain age, ML scam classifier, and Gemini AI analysis...</p>
+        </div>
+
+        <!-- Connection Error Banner -->
+        <div id="errorBanner" class="hidden mt-6 p-4 rounded-xl bg-rose-950/40 border border-rose-800/80 text-rose-300 text-xs leading-relaxed">
+            <div class="flex items-start space-x-2">
+                <span class="text-base">⚠️</span>
+                <div>
+                    <strong class="font-semibold block mb-0.5" id="errorTitle">Connection Error</strong>
+                    <span id="errorMessage">Unable to reach the backend server.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Card -->
+        <div id="results" class="hidden mt-6 pt-6 border-t border-slate-800 space-y-4">
+            
+            <!-- Threat Score Header -->
+            <div class="bg-slate-950/70 p-4 rounded-xl border border-slate-800">
+                <div class="flex justify-between items-center mb-2">
+                    <div>
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Scam Threat Index</span>
+                        <div id="threatSeverityBadge" class="inline-block ml-2 px-2 py-0.5 rounded text-[11px] font-semibold"></div>
+                    </div>
+                    <span id="scoreText" class="text-2xl font-extrabold tracking-tight">0%</span>
+                </div>
+                <div class="w-full bg-slate-800 rounded-full h-3.5 overflow-hidden">
+                    <div id="scoreBar" class="h-full transition-all duration-700 ease-out w-0"></div>
+                </div>
+                
+                <!-- Additional Metric Pills -->
+                <div class="mt-3 flex flex-wrap gap-2 text-[11px]">
+                    <div id="mlProbBadge" class="hidden px-2.5 py-1 rounded-md bg-slate-800 border border-slate-700 text-slate-300">
+                        ML Model Scam Likelihood: <strong id="mlProbVal" class="text-white">--</strong>
+                    </div>
+                    <div id="paymentBadge" class="hidden px-2.5 py-1 rounded-md bg-rose-500/20 border border-rose-500/40 text-rose-300 font-semibold">
+                        💸 Payment / Advance Fee Detected
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Verdict -->
+            <div class="bg-slate-950/70 p-4 rounded-xl border border-slate-800">
+                <h2 class="text-xs uppercase tracking-wider font-semibold text-slate-400 mb-1.5 flex items-center gap-1.5">
+                    <span>🤖</span> AI Security Assessment
+                </h2>
+                <p id="verdict" class="text-sm text-slate-200 leading-relaxed font-medium"></p>
+            </div>
+
+            <!-- Red Flags List -->
+            <div class="bg-slate-950/70 p-4 rounded-xl border border-slate-800">
+                <h2 class="text-xs uppercase tracking-wider font-semibold text-slate-400 mb-2 flex items-center gap-1.5">
+                    <span>🚩</span> Identified Risk Factors & Red Flags
+                </h2>
+                <ul id="flagsList" class="space-y-1.5 text-xs text-rose-300"></ul>
+            </div>
+
+            <!-- Domain and Cryptographic Details -->
+            <div id="domainContainer" class="bg-slate-950/70 p-4 rounded-xl border border-slate-800 text-xs text-slate-400 space-y-1.5">
+                <div class="flex items-start justify-between">
+                    <span class="font-semibold text-slate-300">Domain Intelligence:</span>
+                    <span id="domainInfo" class="text-right text-slate-300 font-mono">N/A</span>
+                </div>
+                <div class="flex items-start justify-between">
+                    <span class="font-semibold text-slate-300">File SHA-256:</span>
+                    <span id="fileHashInfo" class="font-mono text-slate-400 text-[11px] truncate max-w-[280px]">N/A</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Resolve backend URL dynamically whether served via Flask (:5000), Live Server, or file://
+        const getBackendUrl = () => {
+            if ((window.location.protocol === 'http:' || window.location.protocol === 'https:') && window.location.port === '5000') {
+                return '';
+            }
+            return 'http://127.0.0.1:5000';
+        };
+
+        const API_BASE = getBackendUrl();
+
+        // Elements
+        const dropZone = document.getElementById('dropZone');
+        const pdfFileInput = document.getElementById('pdfFile');
+        const fileNameDisplay = document.getElementById('fileName');
+        const statusBadge = document.getElementById('statusBadge');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const errorBanner = document.getElementById('errorBanner');
+        const errorMessage = document.getElementById('errorMessage');
+
+        // Check Backend Health
+        async function checkBackendHealth() {
+            try {
+                const response = await fetch(`${API_BASE}/api/health`, { method: 'GET' });
+                if (response.ok) {
+                    const data = await response.json();
+                    statusDot.className = "w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]";
+                    statusText.textContent = "Backend Connected";
+                    statusText.className = "text-emerald-400 font-semibold";
+                    statusBadge.className = "self-start sm:self-center flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-950/40 border border-emerald-800/60 shadow-inner";
+                    return true;
+                }
+            } catch (err) {
+                console.warn("Backend health check failed:", err);
+            }
+            statusDot.className = "w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]";
+            statusText.textContent = "Backend Offline (Port 5000)";
+            statusText.className = "text-rose-400 font-semibold";
+            statusBadge.className = "self-start sm:self-center flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-medium bg-rose-950/40 border border-rose-800/60 shadow-inner";
+            return false;
+        }
+
+        // Initialize health check immediately & periodic poll
+        checkBackendHealth();
+        setInterval(checkBackendHealth, 15000);
+
+        // Drag and Drop File Handlers
+        dropZone.addEventListener('click', () => pdfFileInput.click());
+
+        ['dragenter', 'dragover'].forEach(name => {
+            dropZone.addEventListener(name, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.classList.add('border-blue-500', 'bg-blue-950/30');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(name => {
+            dropZone.addEventListener(name, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.classList.remove('border-blue-500', 'bg-blue-950/30');
+            });
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            if (e.dataTransfer && e.dataTransfer.files.length > 0) {
+                const file = e.dataTransfer.files[0];
+                if (file.name.toLowerCase().endsWith('.pdf')) {
+                    pdfFileInput.files = e.dataTransfer.files;
+                    fileNameDisplay.innerText = `📄 Attached PDF: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+                } else {
+                    alert('Please select a valid PDF file.');
+                }
+            }
+        });
+
+        pdfFileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                const file = e.target.files[0];
+                fileNameDisplay.innerText = `📄 Attached PDF: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+            } else {
+                fileNameDisplay.innerText = '';
+            }
+        });
+
+        // Quick Sample Buttons
+        document.getElementById('loadSampleScam').addEventListener('click', () => {
+            document.getElementById('offerText').value = "Congratulations! You have been selected for the Executive Remote Assistant role at $45/hr. Prior to onboarding, you must purchase home office equipment from our approved vendor via Zelle or wire transfer ($300 refundable training fee). We will mail you a reimbursement cashier check.";
+            document.getElementById('offerUrl').value = "https://careers-verified-global-remote.top";
+        });
+
+        document.getElementById('loadSampleLegit').addEventListener('click', () => {
+            document.getElementById('offerText').value = "Dear Candidate, We are pleased to extend an offer for the Senior Software Engineer position at Google LLC. Your base salary will be $165,000 annually, eligible for standard health benefits and 401(k) match. Please review the employment agreement in your applicant portal.";
+            document.getElementById('offerUrl').value = "https://careers.google.com";
+        });
+
+        document.getElementById('clearFormBtn').addEventListener('click', () => {
+            document.getElementById('offerText').value = '';
+            document.getElementById('offerUrl').value = '';
+            pdfFileInput.value = '';
+            fileNameDisplay.innerText = '';
+            document.getElementById('results').classList.add('hidden');
+            errorBanner.classList.add('hidden');
+        });
+
+        // Form Submission
+        document.getElementById('scanForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            const submitBtn = document.getElementById('submitBtn');
+
+            errorBanner.classList.add('hidden');
+            loading.classList.remove('hidden');
+            results.classList.add('hidden');
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            const textVal = document.getElementById('offerText').value.trim();
+            const urlVal = document.getElementById('offerUrl').value.trim();
+            const hasFile = pdfFileInput.files.length > 0;
+
+            if (!textVal && !urlVal && !hasFile) {
+                loading.classList.add('hidden');
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                errorBanner.classList.remove('hidden');
+                errorMessage.textContent = "Please provide offer text, a domain URL, or attach a PDF document.";
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('text', textVal);
+            formData.append('url', urlVal);
+            if (hasFile) {
+                formData.append('file', pdfFileInput.files[0]);
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/scan`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                loading.classList.add('hidden');
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+
+                if (response.ok) {
+                    results.classList.remove('hidden');
+
+                    const score = data.scam_threat_index ?? 0;
+                    const scoreText = document.getElementById('scoreText');
+                    const scoreBar = document.getElementById('scoreBar');
+                    const badge = document.getElementById('threatSeverityBadge');
+
+                    scoreText.innerText = `${score}%`;
+                    scoreBar.style.width = `${score}%`;
+
+                    if (score >= 70) {
+                        scoreText.className = "text-2xl font-extrabold text-rose-500";
+                        scoreBar.className = "h-full transition-all duration-700 ease-out bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.6)]";
+                        badge.innerText = "CRITICAL RISK";
+                        badge.className = "inline-block ml-2 px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/30";
+                    } else if (score >= 40) {
+                        scoreText.className = "text-2xl font-extrabold text-amber-400";
+                        scoreBar.className = "h-full transition-all duration-700 ease-out bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.6)]";
+                        badge.innerText = "SUSPICIOUS";
+                        badge.className = "inline-block ml-2 px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30";
+                    } else {
+                        scoreText.className = "text-2xl font-extrabold text-emerald-400";
+                        scoreBar.className = "h-full transition-all duration-700 ease-out bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.6)]";
+                        badge.innerText = "LOW RISK / SAFE";
+                        badge.className = "inline-block ml-2 px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
+                    }
+
+                    // ML Probability Badge
+                    const mlProbBadge = document.getElementById('mlProbBadge');
+                    const mlProbVal = document.getElementById('mlProbVal');
+                    if (data.ml_probability !== null && data.ml_probability !== undefined) {
+                        mlProbVal.innerText = `${data.ml_probability}%`;
+                        mlProbBadge.classList.remove('hidden');
+                    } else {
+                        mlProbBadge.classList.add('hidden');
+                    }
+
+                    // Payment Demand Badge
+                    const paymentBadge = document.getElementById('paymentBadge');
+                    if (data.payment_demand_detected) {
+                        paymentBadge.classList.remove('hidden');
+                    } else {
+                        paymentBadge.classList.add('hidden');
+                    }
+
+                    // AI Verdict
+                    document.getElementById('verdict').innerText = data.summary || "Analysis successfully completed.";
+
+                    // Red Flags
+                    const flagsList = document.getElementById('flagsList');
+                    flagsList.innerHTML = '';
+                    const flags = data.audit_red_flags || [];
+
+                    if (flags.length === 0) {
+                        flagsList.innerHTML = '<li class="text-emerald-400 list-none flex items-center gap-1.5"><span>✅</span> No high-risk red flags or scam patterns identified.</li>';
+                    } else {
+                        flags.forEach(flag => {
+                            const li = document.createElement('li');
+                            li.className = "flex items-start gap-1.5";
+                            li.innerHTML = `<span class="text-rose-400 font-bold">•</span> <span>${flag}</span>`;
+                            flagsList.appendChild(li);
+                        });
+                    }
+
+                    // Domain Info
+                    const dom = data.domain_info;
+                    if (dom && dom.domain) {
+                        let parts = [`Host: ${dom.domain}`];
+                        if (dom.age_days !== null && dom.age_days !== undefined) {
+                            parts.push(`Age: ${dom.age_days} days`);
+                        }
+                        if (dom.flagged) {
+                            parts.push(`⚠️ NEW DOMAIN (<180d)`);
+                        }
+                        document.getElementById('domainInfo').innerText = parts.join(' | ');
+                    } else {
+                        document.getElementById('domainInfo').innerText = "No domain supplied";
+                    }
+
+                    // SHA-256 Hash
+                    document.getElementById('fileHashInfo').innerText = data.document_sha256 || "None (No PDF uploaded)";
+
+                } else {
+                    errorBanner.classList.remove('hidden');
+                    errorMessage.textContent = data.error || 'Server error occurred during scan.';
+                }
+            } catch (err) {
+                loading.classList.add('hidden');
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                errorBanner.classList.remove('hidden');
+                errorMessage.innerHTML = `Failed to connect to backend server at <code>${API_BASE}</code>.<br>Please make sure Flask is running with <code>python3 app.py</code>.`;
+                checkBackendHealth();
+            }
+        });
+    </script>
+</body>
+
+</html>

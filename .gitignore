@@ -1,0 +1,40 @@
+# Environment & Secrets (CRITICAL: Never commit API keys)
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Python virtual environments
+venv/
+env/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Large datasets (Keep repository lightweight)
+fake_job_postings.csv
+*.csv
+
+# macOS metadata
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# IDE & Editor folders
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs and scratch files
+*.log
+scratch/
